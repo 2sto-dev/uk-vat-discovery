@@ -392,7 +392,7 @@ Nivelul 3: Verificare Inversă & Divulgare Voluntară (Cost Ridicat, Acoperire 2
 └── Marea Britanie, Irlanda, Olanda
     └── Strategie: Pipeline complet (rezoluție domenii DNS + crawling cascajat + entity resolution).
 
-Nivelul 4: Piețe Genuin Dificile (Registre Opace, Sisteme Fragmentate)
+Nivelul 4: Piețe cu Adevărat Dificile (Registre Închise, Sisteme Fragmentate)
 └── Statele Unite ale Americii (Taxe pe Vânzări), China (USCC)
     └── De ce e greu: În SUA nu există TVA național. Taxele pe vânzări sunt reglementate
         distinct în 50 de state, fără registre publice de interogare deschisă.
