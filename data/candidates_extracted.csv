@@ -1,0 +1,5 @@
+CompanyNumber,CompanyName,RegAddress.PostCode,domain,source_page,raw_match,candidate_vat,is_checksum_valid,checksum_rule
+16702697,PUZZLEINA LTD,WC2H 9JQ,https://puzzleina.co.uk/,https://puzzleina.co.uk,VAT: 504480611,504480611,True,POST_2009
+00445790,TESCO PLC,AL7 1GA,https://www.tescoplc.com,https://www.tescoplc.com/terms,VAT 220 4302 31,220430231,True,STANDARD
+00214436,MARKS AND SPENCER P.L.C.,W2 1NW,https://www.marksandspencer.com,https://www.marksandspencer.com/legal,VAT: GB 232 1288 92,232128892,True,STANDARD
+15294449,CAROLINE BUILDERS LTD,CR7 8JW,https://www.carolinebuilders.co.uk,https://www.carolinebuilders.co.uk/footer,Agency VAT 220430231,220430231,True,STANDARD

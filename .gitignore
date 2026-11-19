@@ -1,0 +1,19 @@
+# Raw bulk data (large CSVs)
+data/raw/
+*.csv.zip
+*.zip
+
+# Python cache & virtualenvs
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

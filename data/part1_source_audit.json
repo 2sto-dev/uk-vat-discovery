@@ -1,0 +1,37 @@
+{
+  "benchmark_timestamp": "2026-11-19T10:20:26Z",
+  "sources": {
+    "contracts_finder": {
+      "source_name": "UK Contracts Finder (OCDS)",
+      "endpoint": "https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?stages=award",
+      "status": "COMPLETED",
+      "latency_seconds": 12.71,
+      "releases_sampled": 100,
+      "suppliers_inspected": 112,
+      "suppliers_with_vat": 0,
+      "suppliers_with_company_number": 42,
+      "vat_coverage_pct": 0.0,
+      "dead_end_reason": "Public sector procurement OCDS releases overwhelmingly record Companies House numbers (42/112 suppliers), while VAT numbers are almost completely absent (0 found, 0.0%) due to redaction or procurement form guidelines preferring CRN."
+    },
+    "common_crawl": {
+      "source_name": "Common Crawl CDX Index",
+      "endpoint": "https://index.commoncrawl.org/CC-MAIN-2024-38-index",
+      "domains_tested": 10,
+      "domains_with_records": 2,
+      "high_yield_pages_found": 13,
+      "avg_query_latency_ms": 9050.1,
+      "status": "COMPLETED",
+      "dead_end_reason": "Common Crawl CDX covers 2/10 test domains, but querying the CDX index averages 9050.1ms per domain. Furthermore, fetching the actual HTML requires reading multi-megabyte WARC byte ranges over S3/HTTP. For targeted discovery of UK SMEs, direct polite GET requests to the live web are ~5x faster and guarantee access to current terms/footer disclosures."
+    },
+    "hmrc_eori": {
+      "source_name": "HMRC EORI Service",
+      "endpoint": "https://www.tax.service.gov.uk/check-eori-number",
+      "query_direction": "Backwards-only",
+      "eori_structure": "GB + 9-digit VAT + 000 (for VAT-registered entities)",
+      "searchable_by_company_name": false,
+      "latency_seconds": 0.49,
+      "status": "COMPLETED",
+      "dead_end_reason": "HMRC's public EORI checker validates 12-digit EORI numbers (GB + 9-digit VAT + 000) but requires the EORI number as input. It does not provide forward discovery from company name or Companies House number. However, when an EORI is discovered on an export invoice, website footer, or shipping manifest, digits 3-11 reliably map 1:1 to the 9-digit VAT number (validated by Modulo-97)."
+    }
+  }
+}
