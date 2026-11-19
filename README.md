@@ -99,49 +99,42 @@ Așa că am luat la rând fiecare sursă deschisă ipotetică și am testat-o sc
 
 ### Analiza pe Fiecare Sursă: De ce au picat și ce am învățat
 
-#### 1. Achizițiile Publice din UK: Contracts Finder (Standardul OCDS)
-* **Ipoteza de la care am plecat:** Instituțiile publice din Marea Britanie sunt obligate prin lege să fie transparente cu privire la banul public. M-am gândit că în documentele de atribuire a contractelor (*tender awards*), statul ar putea înregistra codul fiscal/TVA al furnizorilor câștigători pentru deconturi.
-* **Ce am rulat:** Am interogat endpoint-ul public:
-  ```http
-  GET https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?stages=award
-  ```
-  Am parcurs 100 de pachete de atribuire și am extras obiectele `parties` și `suppliers`, analizând schemele de identificare (`identifier.scheme` și `additionalIdentifiers`).
-* **Ce a venit înapoi:** Din 112 furnizori comerciali inspectați:
-  * Furnizori cu număr de la Registrul Comerțului (`GB-COH`): **42 (37,5%)**
-  * Furnizori cu ID intern de furnizor atribuit de autoritate: **70 (62,5%)**
-  * Furnizori cu număr de TVA (`GB-VAT`): **0 (0,0%)**
-* **De ce a eșuat:** Ghidul autorității centrale de achiziții (*Crown Commercial Service*) cere cumpărătorilor publici să identifice companiile prin numărul unic de la Companies House (CRN). Codul de TVA este omis intenționat sau redactat pentru a proteja confidențialitatea fiscală a furnizorilor mici sau a persoanelor fizice autorizate. Așadar, Contracts Finder este complet inutil pentru descoperirea codurilor de TVA.
+#### 1. Achizițiile publice din UK: Contracts Finder (Standardul OCDS)
 
-#### 2. Arhiva Web Globală: Common Crawl (Indexul CDX)
-* **Ipoteza de la care am plecat:** Proiectul menționa: *„dacă numerele sunt împrăștiate pe milioane de pagini, crawling-ul site cu site s-ar putea să aibă o formă total greșită”*. M-am întrebat dacă putem folosi indexul Common Crawl pentru a găsi direct paginile de `/terms` și `/privacy` fără să vizităm live fiecare site.
-* **Ce am rulat:** Am interogat serverul CDX (`https://index.commoncrawl.org/CC-MAIN-2024-38-index`) pentru 10 domenii de companii tipice din lanțul de aprovizionare industrial (firme de încălzire, fabrici de ventilatoare, prelucrători de metale din UK).
-* **Ce a venit înapoi:** 
-  * Doar **2 din cele 10 domenii** aveau pagini salvate în arhiva Common Crawl.
-  * O singură interogare în indexul CDX a durat în medie **9.050 ms** (peste 9 secunde per domeniu!).
-  * Pentru a citi efectiv HTML-ul, trebuia să descarci porțiuni de octeți (byte-ranges) din fișiere WARC comprimate stocate pe Amazon S3, care adesea cântăresc zeci de megabytes.
-* **De ce a eșuat:** Common Crawl este optimizat pentru site-uri cu PageRank mare și trafic intens. Firmele din lanțul industrial (furnizori de componente, ateliere de mecanică fină, distribuitori regionali de materiale) sunt adesea complet ignorate sau vizitate foarte rar de botul Common Crawl. Un simplu request HTTP live este de cel puțin 14 ori mai rapid, consumă infim mai puține resurse și îți garantează că citești termenii contractuali valabili astăzi, nu o arhivă de acum 6 luni.
+Am vrut să vedem dacă licitațiile publice conțin codul de TVA al furnizorilor câștigători. Am interogat API-ul public OCDS și am analizat 100 de contracte atribuite (112 furnizori comerciali).
 
-#### 3. Numărul Vamal EORI de la HMRC: O punte cu sens unic
-* **Ipoteza de la care am plecat:** Veridion sugera explorarea identificatorilor adiacenți. În Marea Britanie, orice companie care face import-export are nevoie de un număr EORI.
-* **Ce am descoperit:** Pentru firmele plătitoare de TVA, numărul EORI britanic are o structură standardizată:
-  $$\text{EORI} = \text{"GB"} + \text{Cod TVA (9 cifre)} + \text{"000"}$$
-  Dacă dai peste un număr EORI (de exemplu pe o factură de transport sau un document vamal), **cifrele de la poziția 3 la 11 reprezintă 1:1 codul de TVA al companiei**, validat pe deplin de algoritmul Modulo-97.
-* **Unde s-a blocat:** Am testat serviciul public al HMRC de verificare a codurilor EORI (`https://www.tax.service.gov.uk/check-eori-number`). Exact ca la TVA, sistemul funcționează **doar invers**: îi dai codul EORI și îți spune dacă e valid. Nu există nicio posibilitate de a căuta un cod EORI pornind de la numele companiei. Deci nu rezolvă problema inițială a descoperirii.
+* **Rezultat:** Din 112 furnizori, **exact 0 aveau cod de TVA**. În schimb, 42 aveau numărul de la Registrul Comerțului (CRN).
+* **De ce a eșuat:** Ghidul național de achiziții obligă cumpărătorii publici să folosească doar numărul CRN. Datele de TVA sunt cenzurate pentru protecția fiscală a firmelor mici. Sursa este un punct mort complet.
 
-#### 4. Căutarea automată a site-urilor pe Google / DuckDuckGo / Bing: Cum ne-am lovit de zidul anti-bot
+#### 2. Arhiva web globală: Common Crawl (Indexul CDX)
 
-Planul inițial părea de bun-simț: dacă avem denumirea oficială și codul poștal din Companies House, dăm un search automat pe DuckDuckGo sau Bing cu `"{Nume Companie}" "{Postcode}"`, extragem primul link care nu e director de firme și am rezolvat găsirea site-ului.
+Am încercat să folosim arhiva Common Crawl ca să găsim direct paginile de `/terms` și `/privacy`, fără să vizităm fiecare site în parte. Am testat indexul CDX pe 10 domenii de IMM-uri din lanțul industrial.
 
-Doar că pe web-ul de astăzi, căutarea automată fără un API comercial plătit e un câmp minat:
-* **DuckDuckGo** a răspuns aproape instantaneu cu `HTTP 202 Accepted` — o pagină goală cu un script de verificare în JavaScript (Proof-of-Work pentru boți). Nici varianta HTML Lite nu a mai permis interogări скриptate fără o sesiune curată de browser.
-* **Mojeek** ne-a returnat direct `HTTP 403 Forbidden` după primele cereri.
-* **Yahoo** a aruncat erori interne `HTTP 500`.
-* **Bing** a fost cel mai interesant: întorcea rezultate, dar fiecare link era împachetat într-un redirect mascat (`bing.com/ck/a?...&u=a1...`), unde adresa reală era codificată în base64. Chiar și decodificată, lipsa unui context rezidențial din UK a făcut ca motorul să trimită rezultate localizate pe IP-ul curent în loc de site-ul IMM-ului căutat.
+* **Rezultat:** Doar 2 din 10 domenii erau indexate. Căutarea în index a durat 9 secunde per domeniu, iar descărcarea conținutului din fișiere WARC consuma zeci de megabytes.
+* **De ce a eșuat:** Common Crawl indexează site-uri mari de trafic, nu mici producători sau ateliere locale. Un simplu request HTTP live este de 14 ori mai rapid și citește termenii actuali, nu o arhivă veche de 6 luni.
 
-**Ce am ales să fac în schimb:**
-În loc să risipim timp fentând CAPTCHA-uri sau să cumpărăm proxy-uri rezidențiale scumpe pentru un PoC, am mers pe o logică inginerească simplă: aproape orice afacere activă din UK își cumpără domeniul fix pe numele ei. Dacă firma din registru se cheamă `Twisted Melon Ltd`, adresa site-ului va fi în 9 cazuri din 10 `twistedmelon.co.uk` sau `twistedmelon.com`.
+#### 3. Numărul vamal EORI de la HMRC: O punte cu sens unic
 
-Așa că am construit un generator de „slug-uri” (curăță sufixele juridice precum `LTD`, `PLC`, spațiile și semnele de punctuație) și l-am legat la o rezoluție directă prin DNS (`socket.gethostbyname()`). O astfel de verificare pe socket durează sub 20 de milisecunde, nu costă nimic și nu declanșează niciun mecanism de blocare (WAF). Am reușit astfel să confirmăm direct site-urile reale pentru mai bine de 50% dintre firmele active din eșantion, fără să trimitem măcar o singură căutare pe motoarele mari.
+Am verificat dacă putem ajunge la TVA prin numărul vamal de import-export (EORI). Pentru firmele plătitoare de TVA din UK, formula este fixă: `GB + 9 cifre TVA + 000`.
+
+* **Ce funcționează:** Dacă găsești un EORI pe o factură externă sau un document de transport, cifrele 3–11 sunt 1:1 codul de TVA al firmei (validat Modulo-97).
+* **Unde s-a blocat:** Verificatorul oficial EORI al HMRC funcționează exact ca cel de TVA: îi dai codul și ți-l validează, dar nu te lasă să cauți după numele firmei. Nu ajută la căutarea inițială.
+
+#### 4. Căutarea automată pe motoare de căutare (SERP): De ce am renunțat la ea
+
+Am încercat inițial să găsim site-ul companiei printr-o căutare automată simplă: `"{Nume Companie}" "{Postcode}"`.
+
+N-a mers deloc din cauza sistemelor anti-bot:
+* **DuckDuckGo:** Blochează direct cu `HTTP 202 Accepted` (provocare JavaScript anti-bot). Nici versiunea Lite nu funcționează fără sesiune de browser.
+* **Mojeek:** Răspunde cu `HTTP 403 Forbidden` din primele secunde.
+* **Yahoo:** Returnează erori interne `HTTP 500`.
+* **Bing:** Împachetează linkurile în redirect-uri mascate în base64 și localizează rezultatele după IP-ul de rulare, ignorând contextul din UK.
+
+**Ce am făcut în schimb și de ce:**
+Am renunțat la motoarele de căutare și am mers pe deducerea directă a domeniului. Dacă o firmă activă se numește `Twisted Melon Ltd`, în peste 90% din cazuri domeniul ei va fi `twistedmelon.co.uk` sau `twistedmelon.com`.
+
+Am scris un generator de domenii posibile (care elimină `LTD`, `PLC`, spațiile) și am verificat existența lor direct prin DNS (`socket.gethostbyname()`).
+* **De ce e o soluție mai bună:** Verificarea DNS durează sub 20 ms, nu costă nimic și nu este blocată de niciun WAF. Am găsit astfel site-ul real pentru peste 50% din firmele din eșantion, curat și fără CAPTCHA-uri.
 
 ---
 
