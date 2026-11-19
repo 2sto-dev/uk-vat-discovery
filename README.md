@@ -31,7 +31,7 @@ uk-vat-discovery/
 ├── PLAN.md                     # Planul inițial și specificațiile de arhitectură
 ├── README.md                   # Raportul tehnic complet (acest document)
 ├── requirements.txt            # Dependențele Python (pandas, rapidfuzz, requests, bs4, PyMuPDF)
-├── .gitignore                  # Exclude fișierul brut de 2.8 GB, folderele de cache și mediul virtual
+├── .gitignore                 
 ├── data/
 │   ├── raw/                    # Locul unde se pune snapshot-ul descărcat de la Companies House
 │   ├── sample_companies.csv    # Eșantionul aleatoriu extras fără bias (N = 150)
@@ -43,7 +43,7 @@ uk-vat-discovery/
     ├── __init__.py
     ├── config.py               # Configurații globale, regex-uri, coduri SIC țintă, praguri de potrivire
     ├── validators.py           # Algoritmul oficial HMRC Modulo-97 și extractorul EORI
-    ├── 01_sample_generator.py  # Sampler de tip Reservoir pe fișierul masiv de la Companies House
+    ├── 01_sample_generator.py  # Sampler de tip Reservoir pe fișierul de la Companies House
     ├── 02_part1_experiments.py # Benchmark-ul cantitativ pe sursele alternative (Partea 1)
     ├── 03_vat_extractor.py     # Descoperire domenii prin DNS și crawling pe pagini cu potențial ridicat
     ├── 04_hmrc_verifier.py     # Clientul automatizat pentru verificatorul HMRC și reconciliere fuzzy
@@ -79,7 +79,7 @@ python src/05_metrics_report.py
 
 ---
 
-## Partea 1: Jurnalul de Cercetare & Autopsia Punctelor Moarte (The Trail of Dead Ends)
+## Partea 1: Jurnalul de Cercetare — Ce surse am testat și ce a picat (The Trail of Dead Ends)
 
 Cerința Veridion menționează foarte clar: *„Vrem să vedem traseul, nu doar concluzia. Pentru căile care au contat, vrem dovezi: ce ai rulat, ce a venit înapoi, numărul obținut. O constatare că o sursă promițătoare este inutilă valorează mai mult pentru noi decât un scraper care întoarce niște numere.”*
 
@@ -97,7 +97,7 @@ Așa că am luat la rând fiecare sursă deschisă ipotetică și am testat-o sc
 
 ---
 
-### Autopsiile Detaliate: Ce am învățat pe teren
+### Analiza pe Fiecare Sursă: De ce au picat și ce am învățat
 
 #### 1. Achizițiile Publice din UK: Contracts Finder (Standardul OCDS)
 * **Ipoteza de la care am plecat:** Instituțiile publice din Marea Britanie sunt obligate prin lege să fie transparente cu privire la banul public. M-am gândit că în documentele de atribuire a contractelor (*tender awards*), statul ar putea înregistra codul fiscal/TVA al furnizorilor câștigători pentru deconturi.
@@ -237,7 +237,7 @@ Pe eșantionul nostru real, pipeline-ul a descoperit automat site-ul `https://pu
   * Adresă: `HM REVENUE AND CUSTOMS RUBY HOUSE 8 RUBY PLACE ABERDEEN AB10 1ZP GB`
 * **Ce ne învață această adresă?** Ruby House din Aberdeen este sediul central al unității HMRC pentru comercianții nerezidenți și platformele de e-commerce! Postcode-ul din Companies House este un birou virtual din Londra, în timp ce adresa fiscală de la HMRC este adresa unității fiscale. Sistemul nostru a clasificat corect cazul drept `VERIFIED_NAME_MATCH_TRADING_ADDRESS`. Fără un algoritm de reconciliere fuzzy inteligent, o simplă comparare de adresă ar fi respins acest caz real!
 
-#### Anatomia Capcanei Fals-Pozitivelor (Rata de 11,5%)
+#### Cum am depistat numerele false (Capcana celor 11,5% de pe site-uri)
 Dacă am fi preluat orbește orice număr valid de pe pagină, am fi asociat greșit 3 companii. Iată cazurile reale interceptate de modulul nostru:
 1. **Semnătura Agenției Web:** Într-un subsol apărea textul: *„Website created and hosted by WebStudio Ltd (VAT Reg: 984 2134 11)”*. Numărul era 100% valid Modulo-97 și activ pe HMRC. Însă RapidFuzz a calculat o similitudine de doar 18% între numele firmei și numele întors de HMRC (`WebStudio Ltd`), clasificând cazul ca `MISMATCH_FALSE_POSITIVE` și prevenind coruperea datelor.
 2. **Holding-ul Părinte:** O filială locală care afișa codul de TVA al grupului financiar din care face parte, deși juridic era o entitate separată.
