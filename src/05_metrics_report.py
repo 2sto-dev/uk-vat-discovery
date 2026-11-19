@@ -51,9 +51,6 @@ def generate_metrics_summary() -> str:
     overall_yield_pct = (total_true_positives / total_sample * 100) if total_sample else 0.0
 
     md_output = f"""
-## Pipeline Performance & Funnel Metrics
-
-### 1. Verification Funnel ($N = {total_sample}$)
 
 | Stage | Count | Transition Rate | Retention / Yield |
 | :--- | :--- | :--- | :--- |

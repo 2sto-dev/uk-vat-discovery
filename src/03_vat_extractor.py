@@ -13,7 +13,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 try:
-    import fitz  # PyMuPDF
+    import fitz  
 except ImportError:
     fitz = None
 
@@ -216,7 +216,6 @@ def run_extraction_pipeline(limit: Optional[int] = None) -> pd.DataFrame:
             
         time.sleep(0.2)
 
-    # Add known benchmark control companies to ensure ground-truth verification is fully exercised
     benchmark_controls = [
         {"CompanyNumber": "00445790", "CompanyName": "TESCO PLC", "RegAddress.PostCode": "AL7 1GA", "url": "https://www.tescoplc.com"},
         {"CompanyNumber": "00214436", "CompanyName": "MARKS AND SPENCER P.L.C.", "RegAddress.PostCode": "W2 1NW", "url": "https://www.marksandspencer.com"},

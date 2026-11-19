@@ -31,15 +31,12 @@ def validate_uk_vat_checksum(vat_candidate: str) -> Tuple[bool, str]:
     """
     cleaned = clean_vat_string(vat_candidate)
     
-    # Check for branch trader (12 digits: 9-digit VAT + 3-digit branch)
     is_branch = False
     if len(cleaned) == 12 and cleaned.isdigit():
         is_branch = True
         cleaned = cleaned[:9]
         
-    # Standard UK VAT must be exactly 9 digits
     if len(cleaned) != 9 or not cleaned.isdigit():
-        # Special government / health authority cases
         if len(cleaned) == 5:
             prefix = cleaned[:2]
             num = cleaned[2:]
@@ -49,7 +46,6 @@ def validate_uk_vat_checksum(vat_candidate: str) -> Tuple[bool, str]:
                 return True, "SPECIAL_HEALTH_AUTH"
         return False, "INVALID_FORMAT"
     
-    # Reject trivial invalid numbers like 000000000
     if int(cleaned) == 0:
         return False, "INVALID_ZERO"
         
@@ -57,13 +53,9 @@ def validate_uk_vat_checksum(vat_candidate: str) -> Tuple[bool, str]:
     weighted_sum = sum(d * w for d, w in zip(digits[:7], MODULO_97_WEIGHTS))
     check_digits = digits[7] * 10 + digits[8]
     
-    # Rule 1: Standard pre/post HMRC rule
-    # (weighted_sum + check_digits) % 97 == 0
     if (weighted_sum + check_digits) % 97 == 0:
         return True, "BRANCH_TRADER" if is_branch else "STANDARD"
-        
-    # Rule 2: Post-November 2009 rule (+55 offset)
-    # (weighted_sum + check_digits + 55) % 97 == 0
+    
     if (weighted_sum + check_digits + 55) % 97 == 0:
         return True, "BRANCH_TRADER_POST_2009" if is_branch else "POST_2009"
         
@@ -88,9 +80,9 @@ def extract_vat_from_eori(eori_str: str) -> Optional[str]:
 
 if __name__ == "__main__":
     test_cases = [
-        ("GB 220 4302 31", True, "STANDARD"),       # Tesco
-        ("232 1288 92", True, "STANDARD"),          # Marks & Spencer
-        ("GB232128892000", True, "BRANCH_TRADER"),  # M&S EORI/Branch
+        ("GB 220 4302 31", True, "STANDARD"),       
+        ("232 1288 92", True, "STANDARD"),          
+        ("GB232128892000", True, "BRANCH_TRADER"), 
         ("GB 000 0000 00", False, "INVALID_ZERO"),
         ("123456789", False, "INVALID_CHECKSUM"),
     ]
