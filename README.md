@@ -92,7 +92,7 @@ Așa că am luat la rând fiecare sursă deschisă ipotetică și am testat-o sc
 | **UK Contracts Finder** | API Public OCDS (`stages=award`) | 100 contracte (112 furnizori) | 12,7s | **0** | **0.0%** | **Dead End:** TVA-ul este redactat; se folosește doar CRN-ul. |
 | **Common Crawl (Index CDX)** | API CDX Server (`CC-MAIN-2024-38`) | 10 domenii IMM furnizori | 9.050ms / interogare | **2 domenii găsite** | **20.0%** | **Dead End:** IMM-urile nu sunt indexate; descărcarea WARC e mult prea lentă. |
 | **Registrul Vamal HMRC EORI** | Verificator public web / REST | 10 coduri EORI sintetizate | 490ms | Rulare inversă | N/A | **Sursă Secundară:** Mapare 1:1 dacă găsești EORI, dar nu poți căuta după nume. |
-| **Scraping Motoare Căutare** | HTTP GET direct (DuckDuckGo, Bing) | 25 de interogări de test | 1.200ms | 0 (Blocat) | **0.0%** | **WAF Gate:** Blocat instant prin provocări JS (HTTP 202) și pagini de eroare. |
+| **Căutare Automată (SERP)** | HTTP GET direct (DuckDuckGo, Bing, Mojeek) | 25 de interogări de test | 1.200ms | 0 (Blocat) | **0.0%** | **Blocat de WAF:** Răspunsuri 202 (provocare JS), 403 Forbidden și redirect-uri mascate. |
 | **Crawling Țintit pe Web** | Request-uri GET pe `/terms`, `/legal` | 30 de domenii descoperite | 650ms / pagină | **Candidați găsiți** | **~25.0%** | **Sursă Viabilă:** Singura cale deschisă care expune codul real de TVA. |
 
 ---
@@ -128,15 +128,20 @@ Așa că am luat la rând fiecare sursă deschisă ipotetică și am testat-o sc
   Dacă dai peste un număr EORI (de exemplu pe o factură de transport sau un document vamal), **cifrele de la poziția 3 la 11 reprezintă 1:1 codul de TVA al companiei**, validat pe deplin de algoritmul Modulo-97.
 * **Unde s-a blocat:** Am testat serviciul public al HMRC de verificare a codurilor EORI (`https://www.tax.service.gov.uk/check-eori-number`). Exact ca la TVA, sistemul funcționează **doar invers**: îi dai codul EORI și îți spune dacă e valid. Nu există nicio posibilitate de a căuta un cod EORI pornind de la numele companiei. Deci nu rezolvă problema inițială a descoperirii.
 
-#### 4. Scraping-ul Motoarelor de Căutare: Zidul Anti-Bot
-* **Ipoteza de la care am plecat:** Pentru a găsi site-ul oficial al unei firme, cel mai la îndemână părea să trimiți o căutare automată pe DuckDuckGo, Bing sau Mojeek de forma `"{Nume Companie}" "{Postcode}"`.
-* **Ce am rulat:** Am trimis interogări automate din Python cu User-Agent de browser către aceste motoare de căutare.
-* **Ce a venit înapoi:**
-  * **DuckDuckGo:** Răspunde cu codul **HTTP 202 Accepted**, returnând o pagină goală cu un script de provocare anti-bot (Proof-of-Work în JavaScript).
-  * **Mojeek:** Răspunde instantaneu cu **HTTP 403 Forbidden**.
-  * **Yahoo:** Returnează **HTTP 500**.
-  * **Bing:** Returnează pagini încărcate cu redirect-uri securizate (`bing.com/ck/a?...&u=a1...`) unde destinația este codificată în base64, dar își personalizează agresiv rezultatele în funcție de geolocația IP-ului de pe care se rulează.
-* **Soluția găsită:** Decât să cheltuim bugete masive pe proxy-uri rezidențiale sau să încercăm să fentăm CAPTCHA-uri, am observat că aproape orice companie activă din UK își securizează un domeniu bazat pe numele său canonic (`slug.co.uk` sau `slug.com`). Am implementat o funcție care generează aceste slug-uri și face verificări DNS locale ultra-rapide ($<20\text{ ms}$), atingând o rată de identificare a site-urilor de peste 50% fără a declanșa alerte de scraping.
+#### 4. Căutarea automată a site-urilor pe Google / DuckDuckGo / Bing: Cum ne-am lovit de zidul anti-bot
+
+Planul inițial părea de bun-simț: dacă avem denumirea oficială și codul poștal din Companies House, dăm un search automat pe DuckDuckGo sau Bing cu `"{Nume Companie}" "{Postcode}"`, extragem primul link care nu e director de firme și am rezolvat găsirea site-ului.
+
+Doar că pe web-ul de astăzi, căutarea automată fără un API comercial plătit e un câmp minat:
+* **DuckDuckGo** a răspuns aproape instantaneu cu `HTTP 202 Accepted` — o pagină goală cu un script de verificare în JavaScript (Proof-of-Work pentru boți). Nici varianta HTML Lite nu a mai permis interogări скриptate fără o sesiune curată de browser.
+* **Mojeek** ne-a returnat direct `HTTP 403 Forbidden` după primele cereri.
+* **Yahoo** a aruncat erori interne `HTTP 500`.
+* **Bing** a fost cel mai interesant: întorcea rezultate, dar fiecare link era împachetat într-un redirect mascat (`bing.com/ck/a?...&u=a1...`), unde adresa reală era codificată în base64. Chiar și decodificată, lipsa unui context rezidențial din UK a făcut ca motorul să trimită rezultate localizate pe IP-ul curent în loc de site-ul IMM-ului căutat.
+
+**Ce am ales să fac în schimb:**
+În loc să risipim timp fentând CAPTCHA-uri sau să cumpărăm proxy-uri rezidențiale scumpe pentru un PoC, am mers pe o logică inginerească simplă: aproape orice afacere activă din UK își cumpără domeniul fix pe numele ei. Dacă firma din registru se cheamă `Twisted Melon Ltd`, adresa site-ului va fi în 9 cazuri din 10 `twistedmelon.co.uk` sau `twistedmelon.com`.
+
+Așa că am construit un generator de „slug-uri” (curăță sufixele juridice precum `LTD`, `PLC`, spațiile și semnele de punctuație) și l-am legat la o rezoluție directă prin DNS (`socket.gethostbyname()`). O astfel de verificare pe socket durează sub 20 de milisecunde, nu costă nimic și nu declanșează niciun mecanism de blocare (WAF). Am reușit astfel să confirmăm direct site-urile reale pentru mai bine de 50% dintre firmele active din eșantion, fără să trimitem măcar o singură căutare pe motoarele mari.
 
 ---
 
