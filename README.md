@@ -299,7 +299,7 @@ Un cost de **mai puțin de jumătate de penny per companie** face soluția extre
 ### Ce crapă primul în producție? (Failure Modes)
 1. **Blocarea Căutărilor (WAF & CAPTCHA):** Dacă interoghezi masiv motoarele de căutare fără o rotație curată a IP-urilor, ești blocat în primele 10 minute. Soluție: Integrarea unui API dedicat de SERP (ex. SerpApi sau BrightData) și folosirea prealabilă a verificării directe pe DNS.
 2. **Throttling pe Portalul HMRC:** Dacă trimiți 50 de cereri pe secundă de pe același IP, portalul guvernamental va returna erori 429 sau va cere CAPTCHA. Soluție: O coadă de interogare distribuită pe 20–30 de IP-uri de ieșire, limitată strict la maximum 2 cereri/secundă per IP, cu reîncercare exponențială (exponential backoff).
-3. **Diferența dintre Numele Comercial (Trading As) și Numele Juridic:** O firmă poate opera sub brandul „*Apex Logistics*”, dar în actele de la Companies House să se numească „*Johnston & Sons Freight Limited*”. Dacă pe site apare doar brandul comercial, algoritmul de potrivire fuzzy poate da greș. Soluție: Ingerarea bazei de date de nume istorice (`PreviousName`) de la Companies House și corelarea cu registrele de mărci înregistrate (UK IPO).
+3. **Diferența dintre Numele Comercial (Trading As) și Numele Juridic:** O firmă poate opera sub brandul „*Apex Logistics*”, dar în actele de la Companies House să se numească „*Johnston & Sons Freight Limited*”. Dacă pe site apare doar brandul comercial, algoritmul de potrivire fuzzy poate da greș. Soluție: Importul istoricului de denumiri anterioare (`PreviousName`) de la Companies House și corelarea cu registrul de mărci (UK IPO).
 4. **Domenii Expirate sau Parcate:** Dacă o companie s-a închis, domeniul ei poate fi cumpărat de un domainer care afișează reclame sau date reziduale. Checksum-ul și verificarea HMRC vor preveni codurile inventate, dar doar reconcilierea numelui împiedică asocierea unui cod valid lăsat pe un domeniu parcat.
 
 ---
@@ -341,7 +341,7 @@ Când nimeni nu deține lista completă, calitatea datelor se măsoară prin tri
    * **Codurile de TVA ale Persoanelor Fizice (Sole Traders):** Dacă o persoană fizică lucrează de acasă, codul ei de TVA este adesea legat direct de adresa de domiciliu și de datele personale, intrând sub incidența strictă a **UK GDPR**.
 2. **Ce folosim cu deplină încredere:**
    * **Companies House Bulk Data:** Este oferit sub licența oficială **Open Government Licence v3.0 (OGL)**, care permite explicit exploatarea comercială, combinarea cu alte date și vânzarea în produse plătite.
-   * **Paginile Legale Publice ale Companiilor:** Conform regulamentului *Companies (Trading Disclosures) Regulations 2008*, companiile din UK sunt obligate să își expună datele de identificare pe documentele comerciale și site-uri, ingestia acestora constituind o utilizare legitimă de tip *fair-use*.
+   * **Paginile Legale Publice ale Companiilor:** Conform regulamentului *Companies (Trading Disclosures) Regulations 2008*, companiile din UK sunt obligate să își expună datele de identificare pe documentele comerciale și site-uri, colectarea acestora constituind o utilizare legitimă de tip *fair-use*.
 
 ---
 
@@ -390,7 +390,7 @@ Nivelul 2: Impressum Obligatoriu prin Lege (Cost Redus, Acoperire 85-90%)
 
 Nivelul 3: Verificare Inversă & Divulgare Voluntară (Cost Ridicat, Acoperire 20-35%)
 └── Marea Britanie, Irlanda, Olanda
-    └── Strategie: Pipeline complet (rezoluție domenii DNS + crawling cascajat + entity resolution).
+    └── Strategie: Pipeline complet (rezoluție domenii DNS + crawling în cascadă + reconciliere entități).
 
 Nivelul 4: Piețe cu Adevărat Dificile (Registre Închise, Sisteme Fragmentate)
 └── Statele Unite ale Americii (Taxe pe Vânzări), China (USCC)
