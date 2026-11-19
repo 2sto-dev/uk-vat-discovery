@@ -28,7 +28,6 @@ Am organizat codul modular, gândit ca un proiect pregătit pentru producție:
 
 ```text
 uk-vat-discovery/
-├── PLAN.md                     # Planul inițial și specificațiile de arhitectură
 ├── README.md                   # Raportul tehnic complet (acest document)
 ├── requirements.txt            # Dependențele Python (pandas, rapidfuzz, requests, bs4, PyMuPDF)
 ├── .gitignore                 
